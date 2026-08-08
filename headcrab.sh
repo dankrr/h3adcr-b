@@ -365,17 +365,37 @@
         local flatpak_target="$FlatpakSLSsteamInstallDir/path/steam"
         local acted=0
 
-        if [ -e "$flatpak_target" ]; then
-            echo "Found: $flatpak_target"
-            echo "Renaming $flatpak_target -> ${flatpak_target}.bak"
-            mv -- "$flatpak_target" "${flatpak_target}.bak"
+        if [ -e "$flatpak_target" ] || [ -e "${flatpak_target}.bak" ]; then
+            if [ -e "$flatpak_target" ] && [ ! -e "${flatpak_target}.bak" ]; then
+                echo "Found: $flatpak_target"
+                echo "Backing up $flatpak_target -> ${flatpak_target}.bak"
+                mv -- "$flatpak_target" "${flatpak_target}.bak"
+            fi
+
+            mkdir -p "$(dirname "$flatpak_target")"
+            cat > "$flatpak_target" <<'WRAPPER'
+#!/bin/sh
+exec flatpak run com.valvesoftware.Steam "$@"
+WRAPPER
+            chmod 755 "$flatpak_target"
+            echo "Kept compatibility launcher: $flatpak_target"
             acted=1
         fi
 
-        if [ -e "$local_target" ]; then
-            echo "Found: $local_target"
-            echo "Renaming $local_target -> ${local_target}.bak"
-            mv -- "$local_target" "${local_target}.bak"
+        if [ -e "$local_target" ] || [ -e "${local_target}.bak" ]; then
+            if [ -e "$local_target" ] && [ ! -e "${local_target}.bak" ]; then
+                echo "Found: $local_target"
+                echo "Backing up $local_target -> ${local_target}.bak"
+                mv -- "$local_target" "${local_target}.bak"
+            fi
+
+            mkdir -p "$(dirname "$local_target")"
+            cat > "$local_target" <<'WRAPPER'
+#!/bin/sh
+exec /usr/bin/steam "$@"
+WRAPPER
+            chmod 755 "$local_target"
+            echo "Kept compatibility launcher: $local_target"
             acted=1
         fi
 
